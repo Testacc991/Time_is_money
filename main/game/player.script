@@ -1,0 +1,191 @@
+local data = require "main.data"
+local speed = 0.1
+local time = 0
+local coins = 0
+local maxcoins = 0
+local UP = hash("up")
+local DOWN = hash("down")
+local RIGHT = hash("right")
+local LEFT = hash("left")
+local TOUCH = hash("touch")
+local TRIGGER = hash("trigger_response")
+local COIN = hash("coin")
+local DEATH = hash("death")
+
+local tail = {}
+
+
+local function setuplevel(self)
+	coins = 0
+	if  data.getlevel() == 1 then
+		maxcoins = data.LEVEL1COINS
+	elseif data.getlevel() == 2 then
+		maxcoins = data.LEVEL2COINS
+	elseif data.getlevel() == 3 then
+		maxcoins = data.LEVEL3COINS
+	elseif data.getlevel() == 4 then
+		maxcoins = data.LEVEL4COINS
+	end
+end
+
+local function nextlevel(self)
+	data.addlevel()
+	if data.getlevel() > data.MAX_LEVELS then
+		data.quit2menu()
+		data.setlevel(data.MAX_LEVELS)  
+	else
+		msg.post("tilemaps#levels", "reset")
+	end
+end
+function init(self)
+	setuplevel(self)
+	msg.post(".", "acquire_input_focus")
+	msg.post("@render:", "use_fixed_fit_projection", { near = -1, far = 1 })
+	self.ismoving = false
+	label.set_text("label#label", coins)
+	self.player = nil
+	self.t = nil
+end
+
+
+local function endgame(self)
+	
+	if coins>=maxcoins then
+		nextlevel(self)
+		--print("you win")
+	end
+end
+local function sendmessagetogates()
+		msg.post("tilemaps#levels", "movegates") 
+end
+
+
+local function moveplayer(self,func)
+	sendmessagetogates()
+	go.animate(".", "position", go.PLAYBACK_ONCE_FORWARD, data.tile2world(self.player), go.EASING_LINEAR, speed,0,
+	function()
+		self.ismoving = false
+		endgame(self)
+	end)
+end
+
+
+local function move(self,direction)
+	if self.ismoving == false then
+		self.ismoving = true	
+		self.player = data.world2tile(go.get_position())
+		if direction == "up" then
+			self.player = vmath.vector3(self.player.x,self.player.y + 1,self.player.z)
+			
+			if data.cantmoveobj(self.player) then
+					self.ismoving = false
+					return end
+					msg.post("tilemaps#levels", "updatetail",{dir = self.player})
+					moveplayer(self)
+		elseif direction == "down" then 
+			
+			self.player = vmath.vector3(self.player.x,self.player.y - 1,self.player.z)
+			
+			if data.cantmoveobj(self.player) then
+			
+					self.ismoving = false
+					return end
+					msg.post("tilemaps#levels", "updatetail",{dir = self.player})
+					moveplayer(self)
+		elseif direction == "right" then 
+				
+			self.player = vmath.vector3(self.player.x + 1,self.player.y,self.player.z)
+			
+			if data.cantmoveobj(self.player) then
+				
+					self.ismoving = false
+					return end
+					msg.post("tilemaps#levels", "updatetail",{dir = self.player})
+					moveplayer(self)
+		elseif direction == "left" then 
+			
+			self.player = vmath.vector3(self.player.x - 1,self.player.y,self.player.z)
+			
+			if data.cantmoveobj(self.player) then
+					
+					self.ismoving = false
+					return end
+					msg.post("tilemaps#levels", "updatetail",{dir = self.player})
+					moveplayer(self)
+		end
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == TRIGGER then
+		if message.enter then
+			if message.other_group == COIN then
+				msg.post("tilemaps#levels", "collidewithcoin",{id = message.other_id })
+			elseif message.other_group == DEATH then
+				msg.post("tilemaps#levels", "reset")
+			end
+		end
+	end
+	if message_id == UP then
+		move(self,"up")
+	elseif message_id == DOWN then
+		move(self,"down")
+	elseif message_id == RIGHT then
+		move(self,"right")
+	elseif message_id == LEFT then
+		move(self,"left")	
+	elseif message_id == hash("updatecoins") then
+		coins = message.coins
+		label.set_text("label#label", coins)
+	end
+end
+
+function on_input(self, action_id, action)
+
+	if action_id == UP and action.released then
+		move(self,"up")
+		
+	elseif action_id == DOWN and action.released then
+		move(self,"down")
+		
+	elseif action_id == LEFT and action.released then
+		move(self,"left")
+		
+	elseif action_id == RIGHT and action.released then
+		move(self,"right")
+
+	elseif action_id == TOUCH and action.released then
+			self.ismoving = true
+			self.player = data.world2tile(go.get_position())
+			self.touch = data.world2tile(vmath.vector3(action.x,action.y,0))
+			self.t = {
+				vmath.vector3(self.player.x + 1,self.player.y,self.player.z),
+				vmath.vector3(self.player.x - 1,self.player.y,self.player.z),
+				vmath.vector3(self.player.x,self.player.y + 1,self.player.z),
+				vmath.vector3(self.player.x,self.player.y - 1,self.player.z)
+			}
+			for i,v in pairs(self.t) do
+				if self.touch.x == v.x and self.touch.y == v.y then
+					if not data.cantmoveplayer(self.touch) then
+						sendmessagetogates()
+	
+						go.animate(".", "position", go.PLAYBACK_ONCE_FORWARD, data.tile2world(v), go.EASING_LINEAR, speed,0,
+						function()
+							self.ismoving = false
+							endgame(self)
+						end)
+					end
+				else
+					self.ismoving = false
+				end
+			end
+		end
+	end							
+
+
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

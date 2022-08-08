@@ -1,0 +1,143 @@
+local data = require "main.data"
+local dirQueue = {}
+local coins = 0
+local function copy(self)
+	for y = 1, data.MAXHEIGHT do
+		for x = 1, data.MAXWIDTH do
+			local offset = (data.getlevel()-1) * data.MAXWIDTH
+			--print(x,y)
+			--print(offset)
+			local t = tilemap.get_tile("#level", "world", x + offset, y)
+			tilemap.set_tile("#screen", "world", x, y, t)
+			--print(offset)
+			local t2 = tilemap.get_tile("#level", "coins and player", x + offset, y)
+			--print(t2)
+			tilemap.set_tile("#screen", "coins and player", x, y, t2)
+		end
+	end
+end
+local function parse(self)
+	for y = 1, data.MAXHEIGHT do
+		for x = 1, data.MAXWIDTH do
+			local t = tilemap.get_tile("#screen", "coins and player", x, y)
+			local pos1 = data.tile2world(vmath.vector3(x, y, 0.6))
+			local pos2 = data.tile2world(vmath.vector3(x, y, 0.5))
+			local pos3 = data.tile2world(vmath.vector3(x, y, 0.7))
+			local obj = nil
+			if t == 65 then
+				tilemap.set_tile("#screen", "coins and player", x, y, 0)
+				obj = factory.create("#playerfactory", pos1, nil)
+				if obj ~= nil then
+					table.insert(self.spawned, {type="player",id = obj})
+				end
+			elseif t == 66 then
+				tilemap.set_tile("#screen", "coins and player", x, y, 0)
+				obj = factory.create("#coinfactory", pos2, nil)
+				if obj ~= nil then
+					table.insert(self.spawned, {type="coin",id = obj,inpocket = false})
+				end
+			elseif t == 67 then
+				tilemap.set_tile("#screen", "coins and player", x, y, 0)
+				obj = factory.create("#rightleftfactory", pos3, nil)
+				if obj ~= nil then
+					table.insert(self.spawned, {type = "gate",id = obj})
+				end
+			elseif t == 68 then
+				tilemap.set_tile("#screen", "coins and player", x, y, 0)
+				obj = factory.create("#updownfactory", pos3, nil)
+				if obj ~= nil then
+					table.insert(self.spawned, {type = "gate",id = obj})
+				end
+			end
+		end
+	end
+end
+local function makelevel(self)
+	coins = 0
+	self.spawned = {}
+	copy(self)
+	parse(self)
+	for i,v in pairs(self.spawned) do
+		if v.type == "player" then
+			msg.post("/gui#game","adress", {adress = v.id})
+		end
+	end
+end
+function init(self)
+	msg.post("#level", "disable")
+	makelevel(self)
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	
+end
+
+function fixed_update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("reset") then
+		--pprint(self.spawned)
+		for i=1,#self.spawned do
+			go.delete(self.spawned[i].id)	
+		end
+		makelevel(self)
+	elseif message_id == hash("movegates") then
+		for i,v in pairs(self.spawned) do
+			if v.type == "gate" then
+				msg.post(v.id, "move")
+			end
+		end
+	elseif message_id == hash("updatetail") then
+		table.insert(dirQueue, data.tile2world(message.dir))
+		local counter = 1
+		for i,v in pairs(self.spawned) do
+			if v.type == "coin" and v.inpocket == true then
+				local pos = dirQueue[#dirQueue-counter]
+				go.animate(v.id, "position", go.PLAYBACK_ONCE_FORWARD, pos, go.EASING_LINEAR, 0.1,0)
+				counter = counter+1
+			end
+		end
+	elseif message_id == hash("coincollidewithgate") then
+		for i,v in pairs(self.spawned) do
+			if v.id == message.id and v.inpocket == true then
+				msg.post(".", "reset")
+			end
+		end
+	elseif message_id == hash("collidewithcoin") then
+	for i,v in pairs(self.spawned) do
+		if v.id == message.id and v.inpocket == false then
+			v.inpocket = true
+			coins = coins + 1
+			msg.post(sender,"updatecoins",{coins = coins})
+		end 
+	end
+end
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here. The game object this script is attached to
+	-- must have acquired input focus:
+	--
+	--    msg.post(".", "acquire_input_focus")
+	--
+	-- All mapped input bindings will be received. Mouse and touch input will
+	-- be received regardless of where on the screen it happened.
+	-- Learn more: https://defold.com/manuals/input/
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

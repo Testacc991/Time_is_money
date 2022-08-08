@@ -1,0 +1,28 @@
+local function show(self,proxy)
+	if self.current_proxy then
+		msg.post(self.current_proxy, "unload")
+	end
+	msg.post(proxy, "load")
+end
+function init(self)
+	--profiler.enable_ui(true)
+	msg.post(".", "acquire_input_focus") 
+	msg.post("#menu", "load")
+	self.current_proxy = nil
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("show game") then
+		show(self, "#game")
+	elseif message_id == hash("show menu") then
+		show(self, "#menu")
+	elseif message_id == hash("proxy_loaded") then
+		self.current_proxy = sender
+		msg.post(sender, "enable")
+	elseif message_id == hash("proxy_unloaded") then
+
+	end
+end
+
+function update(self,dt)
+end

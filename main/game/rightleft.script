@@ -1,0 +1,32 @@
+local data = require "main.data"
+local speed = 0.1
+
+function init(self)
+	self.direction = true
+	self.posright = nil
+	self.posleft = nil
+	self.pos = nil
+end
+
+local function move(pos)
+	go.animate(".", "position", go.PLAYBACK_ONCE_FORWARD, pos, go.EASING_LINEAR, speed,0)
+end
+function on_message(self, message_id, message, sender)
+	if message_id == hash("move") then
+		self.pos = data.world2tile( go.get_position() )
+		self.posright = vmath.vector3( self.pos.x+1,self.pos.y,self.pos.z )
+		self.posleft = vmath.vector3( self.pos.x-1,self.pos.y,self.pos.z )
+		if data.cantmoveobj( self.posright ) then
+			self.direction = false
+			move(data.tile2world( self.posleft ))
+		elseif data.cantmoveobj( self.posleft ) then
+			self.direction = true
+			move(data.tile2world( self.posright ))
+		end
+		if self.direction == false then
+			move(data.tile2world ( self.posleft ))
+		elseif self.direction == true then
+			move(data.tile2world ( self.posright ))
+		end
+	end
+end

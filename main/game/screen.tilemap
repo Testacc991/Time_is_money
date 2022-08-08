@@ -1,0 +1,45 @@
+tile_set: "/main/game/level.tilesource"
+layers {
+  id: "world"
+  z: 0.0
+  is_visible: 1
+  cell {
+    x: -1
+    y: -1
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
+  cell {
+    x: 15
+    y: 10
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
+}
+layers {
+  id: "coins and player"
+  z: 0.5
+  is_visible: 1
+  cell {
+    x: -1
+    y: -1
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
+  cell {
+    x: 15
+    y: 10
+    tile: 0
+    h_flip: 0
+    v_flip: 0
+    rotate90: 0
+  }
+}
+material: "/builtins/materials/tile_map.material"
+blend_mode: BLEND_MODE_ALPHA

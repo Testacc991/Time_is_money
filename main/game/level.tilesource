@@ -1,0 +1,47 @@
+image: "/assets/tilemap.png"
+tile_width: 16
+tile_height: 16
+tile_margin: 0
+tile_spacing: 0
+collision: ""
+material_tag: "tile"
+collision_groups: "default"
+animations {
+  id: "coin"
+  start_tile: 66
+  end_tile: 66
+  playback: PLAYBACK_NONE
+  fps: 30
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "gateblue"
+  start_tile: 68
+  end_tile: 68
+  playback: PLAYBACK_NONE
+  fps: 30
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "gatered"
+  start_tile: 67
+  end_tile: 67
+  playback: PLAYBACK_NONE
+  fps: 30
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "player"
+  start_tile: 65
+  end_tile: 65
+  playback: PLAYBACK_NONE
+  fps: 30
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+extrude_borders: 2
+inner_padding: 0
+sprite_trim_mode: SPRITE_TRIM_MODE_OFF

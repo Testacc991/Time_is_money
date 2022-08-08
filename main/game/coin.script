@@ -1,0 +1,19 @@
+local data = require "main.data"
+local disable = hash("disable")
+local TRIGGER = hash("trigger_response")
+local DEATH = hash("death")
+function init(self)
+	--self.pos = go.get_position()
+	--go.animate(".", "position.y", go.PLAYBACK_LOOP_PINGPONG, self.pos.y+5, go.EASING_LINEAR, 1)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == TRIGGER then
+		if message.enter then
+			if message.other_group == DEATH then
+				msg.post("tilemaps#levels", "coincollidewithgate", {id = go.get_id()})
+			end
+		end
+	end
+end
+
